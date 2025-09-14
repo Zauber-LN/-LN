@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html lang='ja'>
+<head>
+<meta charset='UTF-8'>
+<title>ステータス編集画面（Excel対応）</title>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'></script>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  input[type='number'], input[type='text'] { width: 100%; }
+  button { margin-top: 10px; }
+</style>
+</head>
+<body>
+<h1>ステータス編集画面（Excel対応）</h1>
+<input type='file' accept='.xlsx' onchange='handleFile(event)'><br><br>
+<table id='stat-table'>
+  <thead>
+    <tr><th>項目</th><th>入力単位</th><th>戦闘力上昇値</th></tr>
+  </thead>
+  <tbody></tbody>
+</table>
+<button onclick='addRow()'>行を追加</button>
+<button onclick='saveStats()'>保存</button>
+<script>
+function handleFile(event) {
+  const file = event.target.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, {type: 'array'});
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet, {header:1});
+    const tbody = document.querySelector('#stat-table tbody');
+    tbody.innerHTML = '';
+    json.slice(1).forEach(row => {
+      if (row.length >= 3) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type='text' value="${row[0]}"></td>
+          <td><input type='number' value="${row[1]}" step='0.1'></td>
+          <td><input type='number' value="${row[2]}" step='0.1'></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+function addRow() {
+  const tbody = document.querySelector('#stat-table tbody');
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td><input type='text'></td>
+    <td><input type='number' step='0.1'></td>
+    <td><input type='number' step='0.1'></td>
+  `;
+  tbody.appendChild(row);
+}
+function saveStats() {
+  const rows = document.querySelectorAll('#stat-table tbody tr');
+  const stats = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const name = inputs[0].value;
+    const unit = parseFloat(inputs[1].value) || 0;
+    const value = parseFloat(inputs[2].value) || 0;
+    if (name) {
+      stats.push({ name, unit, value });
+    }
+  });
+  localStorage.setItem('stats', JSON.stringify(stats));
+  alert('保存しました');
+}
+</script>
+</body>
+</html>
